@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 
+import '../../core/shared/shared.dart';
 import '../customers/customers_page.dart';
 import '../../services/auth_service.dart';
 import '../../features/suppliers/supplier_page.dart';
+import '../../features/transactions/transactions_page.dart';
+import '../../features/supplier_payments/supplier_payments_page.dart';
 
 class DashboardPage extends StatelessWidget {
   const DashboardPage({super.key});
@@ -81,6 +84,26 @@ class DashboardPage extends StatelessWidget {
             ),
 
             const SizedBox(height: 12),
+            Card(
+              child: ListTile(
+                leading: const CircleAvatar(child: Icon(Icons.payment)),
+                title: const Text(
+                  'Supplier Payments',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                subtitle: const Text('Record RM payments to suppliers'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const SupplierPaymentsPage(),
+                    ),
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: 12),
 
             // Transactions - coming next
             Card(
@@ -90,8 +113,16 @@ class DashboardPage extends StatelessWidget {
                   'Transactions',
                   style: TextStyle(fontWeight: FontWeight.bold),
                 ),
-                subtitle: const Text('Coming soon'),
+                subtitle: const Text('Manage transactions'),
                 trailing: const Icon(Icons.chevron_right),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const TransactionsPage(),
+                    ),
+                  );
+                },
               ),
             ),
           ],

@@ -61,4 +61,14 @@ class TransactionService {
         .update({'status': status})
         .eq('id', id);
   }
+
+  Future<List<Transaction>> getPendingTransactions() async {
+    final response = await _supabase
+        .from('transactions')
+        .select()
+        .inFilter('status', ['pending', 'customer_paid', 'supplier_paid'])
+        .order('transaction_date', ascending: true);
+
+    return (response as List).map((item) => Transaction.fromMap(item)).toList();
+  }
 }
