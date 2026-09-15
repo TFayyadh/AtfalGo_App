@@ -6,12 +6,17 @@ class SupplierPaymentAllocationService {
   Future<void> createAllocation({
     required String supplierPaymentId,
     required String transactionId,
-    required double amountRm,
+    required double rmbAllocated,
+    required double supplierRate,
   }) async {
+    final amountRm = (rmbAllocated / supplierRate * 100).round() / 100;
+
     await _supabase.from('supplier_payment_allocations').insert({
       'supplier_payment_id': supplierPaymentId,
       'transaction_id': transactionId,
       'amount_rm': amountRm,
+      'rmb_allocated': rmbAllocated,
+      'supplier_rate': supplierRate,
     });
   }
 
@@ -40,6 +45,25 @@ class SupplierPaymentAllocationService {
 
     for (final item in response as List) {
       total += (item['amount_rm'] as num).toDouble();
+    }
+
+    return total;
+  }
+
+  Future<double> getAllocatedRmbForTransaction(String transactionId) async {
+    final response = await _supabase
+        .from('supplier_payment_allocations')
+        .select('rmb_allocated')
+        .eq('transaction_id', transactionId);
+
+    double total = 0;
+
+    for (final item in response as List) {
+      final value = item['rmb_allocated'];
+
+      if (value != null) {
+        total += (value as num).toDouble();
+      }
     }
 
     return total;

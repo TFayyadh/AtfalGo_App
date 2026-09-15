@@ -23,15 +23,22 @@ class _SupplierPaymentAllocationPageState
   final TransactionService _transactionService = TransactionService();
 
   List<Transaction> _transactions = [];
-  final Map<String, TextEditingController> _controllers = {};
 
+  final Map<String, TextEditingController> _rmbControllers = {};
+  final Map<String, TextEditingController> _rateControllers = {};
+
+  // Total RM already allocated from this supplier payment.
   double _allocatedAmount = 0;
-  final Map<String, double> _transactionAllocatedAmounts = {};
+
+  // Total RMB already allocated to each transaction,
+  // across ALL supplier payments.
+  final Map<String, double> _transactionAllocatedRmb = {};
 
   bool _isLoading = true;
   bool _isSaving = false;
 
-  double get _remainingAmount => widget.payment.amountRm - _allocatedAmount;
+  double get _remainingPaymentAmount =>
+      widget.payment.amountRm - _allocatedAmount;
 
   @override
   void initState() {
@@ -41,9 +48,14 @@ class _SupplierPaymentAllocationPageState
 
   @override
   void dispose() {
-    for (final controller in _controllers.values) {
+    for (final controller in _rmbControllers.values) {
       controller.dispose();
     }
+
+    for (final controller in _rateControllers.values) {
+      controller.dispose();
+    }
+
     super.dispose();
   }
 
@@ -51,13 +63,13 @@ class _SupplierPaymentAllocationPageState
     try {
       final transactions = await _transactionService.getPendingTransactions();
 
-      final transactionAllocationMap = <String, double>{};
+      final transactionRmbAllocationMap = <String, double>{};
 
       for (final transaction in transactions) {
-        final totalAllocated = await _allocationService
-            .getAllocatedAmountForTransaction(transaction.id);
+        final totalRmbAllocated = await _allocationService
+            .getAllocatedRmbForTransaction(transaction.id);
 
-        transactionAllocationMap[transaction.id] = totalAllocated;
+        transactionRmbAllocationMap[transaction.id] = totalRmbAllocated;
       }
 
       final allocated = await _allocationService.getAllocatedAmountForPayment(
@@ -69,12 +81,14 @@ class _SupplierPaymentAllocationPageState
       setState(() {
         _transactions = transactions;
         _allocatedAmount = allocated;
-        _transactionAllocatedAmounts.addAll(transactionAllocationMap);
+        _transactionAllocatedRmb.addAll(transactionRmbAllocationMap);
         _isLoading = false;
       });
 
       for (final transaction in transactions) {
-        _controllers[transaction.id] = TextEditingController();
+        _rmbControllers[transaction.id] = TextEditingController();
+
+        _rateControllers[transaction.id] = TextEditingController();
       }
     } catch (e) {
       if (!mounted) return;
@@ -89,8 +103,8 @@ class _SupplierPaymentAllocationPageState
     }
   }
 
-  double _getEnteredAmount(String transactionId) {
-    final controller = _controllers[transactionId];
+  double _getEnteredRmb(String transactionId) {
+    final controller = _rmbControllers[transactionId];
 
     if (controller == null || controller.text.trim().isEmpty) {
       return 0;
@@ -99,99 +113,166 @@ class _SupplierPaymentAllocationPageState
     return double.tryParse(controller.text.trim()) ?? 0;
   }
 
-  double get _enteredTotal {
+  double _getEnteredRate(String transactionId) {
+    final controller = _rateControllers[transactionId];
+
+    if (controller == null || controller.text.trim().isEmpty) {
+      return 0;
+    }
+
+    return double.tryParse(controller.text.trim()) ?? 0;
+  }
+
+  double _getCalculatedRm(String transactionId) {
+    final rmb = _getEnteredRmb(transactionId);
+    final rate = _getEnteredRate(transactionId);
+
+    if (rmb <= 0 || rate <= 0) {
+      return 0;
+    }
+
+    return (rmb / rate * 100).round() / 100;
+  }
+
+  double get _enteredRmTotal {
     double total = 0;
 
     for (final transaction in _transactions) {
-      total += _getEnteredAmount(transaction.id);
+      total += _getCalculatedRm(transaction.id);
     }
 
     return total;
   }
 
+  double get _afterNewAllocationRemaining =>
+      _remainingPaymentAmount - _enteredRmTotal;
+
   Future<void> _saveAllocations() async {
     if (_isSaving) return;
 
-    final enteredTotal = _enteredTotal;
+    bool hasAllocation = false;
 
-    if (enteredTotal <= 0) {
+    for (final transaction in _transactions) {
+      final rmb = _getEnteredRmb(transaction.id);
+
+      if (rmb > 0) {
+        hasAllocation = true;
+        break;
+      }
+    }
+
+    if (!hasAllocation) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Please enter at least one allocation amount.'),
+          content: Text('Please enter at least one RMB allocation.'),
         ),
       );
       return;
     }
 
-    final availableAmount = _remainingAmount;
+    // Check total RM against this supplier payment.
+    final enteredRmTotal = _enteredRmTotal;
 
-    if (enteredTotal > availableAmount + 0.01) {
+    if ((enteredRmTotal * 100).round() >
+        (_remainingPaymentAmount * 100).round()) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Allocation exceeds remaining payment amount '
-            'of RM ${availableAmount.toStringAsFixed(2)}.',
+            'Allocation exceeds the remaining payment '
+            'amount of RM '
+            '${_remainingPaymentAmount.toStringAsFixed(2)}.',
           ),
         ),
       );
       return;
+    }
+
+    // Validate every transaction before saving anything.
+    for (final transaction in _transactions) {
+      final rmb = _getEnteredRmb(transaction.id);
+
+      if (rmb <= 0) continue;
+
+      final rate = _getEnteredRate(transaction.id);
+
+      if (rate <= 0) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Please enter a valid supplier rate for '
+              '${transaction.transactionNo}.',
+            ),
+          ),
+        );
+        return;
+      }
+
+      final alreadyAllocated = _transactionAllocatedRmb[transaction.id] ?? 0;
+
+      final remainingRmb = transaction.rmbRequested - alreadyAllocated;
+
+      if ((rmb * 100).round() > (remainingRmb * 100).round()) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              '${transaction.transactionNo} can only receive '
+              '¥${remainingRmb.toStringAsFixed(2)} more.',
+            ),
+          ),
+        );
+        return;
+      }
     }
 
     setState(() {
       _isSaving = true;
     });
 
-    for (final transaction in _transactions) {
-      final amount = _getEnteredAmount(transaction.id);
+    try {
+      for (final transaction in _transactions) {
+        final rmb = _getEnteredRmb(transaction.id);
 
-      if (amount <= 0) continue;
+        if (rmb <= 0) continue;
 
-      final totalAllocated = _transactionAllocatedAmounts[transaction.id] ?? 0;
+        final rate = _getEnteredRate(transaction.id);
 
-      final amountOut = transaction.amountOutRm ?? 0;
-
-      final remainingTransactionAmount = amountOut - totalAllocated;
-
-      if (amount > remainingTransactionAmount + 0.01) {
-        if (!mounted) return;
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              '${transaction.transactionNo} can only receive '
-              'RM ${remainingTransactionAmount.toStringAsFixed(2)} '
-              'more.',
-            ),
-          ),
+        await _allocationService.createAllocation(
+          supplierPaymentId: widget.payment.id,
+          transactionId: transaction.id,
+          rmbAllocated: rmb,
+          supplierRate: rate,
         );
-
-        setState(() {
-          _isSaving = false;
-        });
-
-        return;
       }
 
-      await _allocationService.createAllocation(
-        supplierPaymentId: widget.payment.id,
-        transactionId: transaction.id,
-        amountRm: amount,
-      );
+      if (!mounted) return;
+
+      setState(() {
+        _isSaving = false;
+      });
+
+      Navigator.pop(context, true);
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        _isSaving = false;
+      });
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Failed to save allocation: $e')));
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final enteredTotal = _enteredTotal;
-    final afterEntryRemaining = _remainingAmount - enteredTotal;
-
     return Scaffold(
       appBar: AppBar(title: const Text('Allocate Supplier Payment')),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : Column(
               children: [
-                _buildPaymentSummary(afterEntryRemaining),
+                _buildPaymentSummary(),
                 const Divider(height: 1),
                 Expanded(
                   child: _transactions.isEmpty
@@ -212,7 +293,7 @@ class _SupplierPaymentAllocationPageState
     );
   }
 
-  Widget _buildPaymentSummary(double afterEntryRemaining) {
+  Widget _buildPaymentSummary() {
     return Card(
       margin: const EdgeInsets.all(16),
       child: Padding(
@@ -226,18 +307,23 @@ class _SupplierPaymentAllocationPageState
             ),
             const SizedBox(height: 8),
             Text(
-              'Payment Amount: RM ${widget.payment.amountRm.toStringAsFixed(2)}',
+              'Payment Amount: RM '
+              '${widget.payment.amountRm.toStringAsFixed(2)}',
             ),
             const SizedBox(height: 4),
             Text(
-              'Already Allocated: RM ${_allocatedAmount.toStringAsFixed(2)}',
+              'Already Allocated: RM '
+              '${_allocatedAmount.toStringAsFixed(2)}',
             ),
             const SizedBox(height: 4),
-            Text('Remaining: RM ${_remainingAmount.toStringAsFixed(2)}'),
+            Text(
+              'Remaining: RM '
+              '${_remainingPaymentAmount.toStringAsFixed(2)}',
+            ),
             const SizedBox(height: 8),
             Text(
-              'After New Allocation: '
-              'RM ${afterEntryRemaining.toStringAsFixed(2)}',
+              'After New Allocation: RM '
+              '${_afterNewAllocationRemaining.toStringAsFixed(2)}',
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
           ],
@@ -247,15 +333,17 @@ class _SupplierPaymentAllocationPageState
   }
 
   Widget _buildTransactionCard(Transaction transaction) {
-    final controller = _controllers[transaction.id]!;
+    final rmbController = _rmbControllers[transaction.id]!;
 
-    final totalAllocated = _transactionAllocatedAmounts[transaction.id] ?? 0;
+    final rateController = _rateControllers[transaction.id]!;
 
-    final amountOut = transaction.amountOutRm ?? 0;
+    final alreadyAllocated = _transactionAllocatedRmb[transaction.id] ?? 0;
 
-    final remainingAmount = amountOut - totalAllocated;
+    final remainingRmb = transaction.rmbRequested - alreadyAllocated;
 
-    final isFullyAllocated = remainingAmount <= 0.01;
+    final isFullyAllocated = remainingRmb <= 0.001;
+
+    final calculatedRm = _getCalculatedRm(transaction.id);
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -268,50 +356,80 @@ class _SupplierPaymentAllocationPageState
               transaction.transactionNo,
               style: Theme.of(context).textTheme.titleMedium,
             ),
+
             const SizedBox(height: 6),
+
             Text(
               'RMB Requested: '
               '${transaction.rmbRequested.toStringAsFixed(2)}',
             ),
-            const SizedBox(height: 4),
-            Text(
-              'Amount Out: '
-              'RM ${(transaction.amountOutRm ?? 0).toStringAsFixed(2)}',
-            ),
+
             const SizedBox(height: 4),
 
-            Text('Allocated: RM ${totalAllocated.toStringAsFixed(2)}'),
+            Text(
+              'RMB Allocated: '
+              '${alreadyAllocated.toStringAsFixed(2)}',
+            ),
+
+            const SizedBox(height: 4),
 
             Text(
-              'Remaining: RM ${remainingAmount < 0 ? 0 : remainingAmount.toStringAsFixed(2)}',
-              style: TextStyle(fontWeight: FontWeight.bold),
+              'RMB Remaining: '
+              '${remainingRmb < 0 ? '0.00' : remainingRmb.toStringAsFixed(2)}',
+              style: const TextStyle(fontWeight: FontWeight.bold),
             ),
+
             const SizedBox(height: 12),
+
             if (isFullyAllocated)
               Padding(
                 padding: const EdgeInsets.only(bottom: 8),
                 child: Text(
-                  'Fully Allocated: '
-                  'RM ${totalAllocated.toStringAsFixed(2)}',
+                  'Fully Allocated',
                   style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
               ),
+
             TextField(
-              controller: controller,
+              controller: rmbController,
               enabled: !isFullyAllocated,
               keyboardType: const TextInputType.numberWithOptions(
                 decimal: true,
               ),
               decoration: InputDecoration(
-                labelText: 'Allocation Amount (RM)',
-                prefixText: 'RM ',
-                border: OutlineInputBorder(),
+                labelText: 'RMB Allocation',
+                prefixText: '¥ ',
+                border: const OutlineInputBorder(),
                 suffixIcon: isFullyAllocated ? const Icon(Icons.lock) : null,
               ),
-
               onChanged: (_) {
                 setState(() {});
               },
+            ),
+
+            const SizedBox(height: 12),
+
+            TextField(
+              controller: rateController,
+              enabled: !isFullyAllocated,
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
+              decoration: const InputDecoration(
+                labelText: 'Supplier Rate',
+                border: OutlineInputBorder(),
+              ),
+              onChanged: (_) {
+                setState(() {});
+              },
+            ),
+
+            const SizedBox(height: 12),
+
+            Text(
+              'RM Amount: RM '
+              '${calculatedRm.toStringAsFixed(2)}',
+              style: const TextStyle(fontWeight: FontWeight.bold),
             ),
           ],
         ),

@@ -117,14 +117,13 @@ class _TransactionsPageState extends State<TransactionsPage> {
       return '-';
     }
 
-    return 'RM ${value.toStringAsFixed(2)}';
+    return 'RMB ${value.toStringAsFixed(2)}';
   }
 
   Future<void> _showTransactionDialog() async {
     final transactionNoController = TextEditingController();
     final rmbController = TextEditingController();
     final customerRateController = TextEditingController();
-    final supplierRateController = TextEditingController();
     final notesController = TextEditingController();
 
     final formKey = GlobalKey<FormState>();
@@ -143,14 +142,9 @@ class _TransactionsPageState extends State<TransactionsPage> {
 
               final rmb = double.tryParse(rmbController.text);
               final customerRate = double.tryParse(customerRateController.text);
-              final supplierRate = double.tryParse(supplierRateController.text);
 
               if (rmb != null && customerRate != null && customerRate > 0) {
                 amountIn = (rmb / customerRate * 100).round() / 100;
-              }
-
-              if (rmb != null && supplierRate != null && supplierRate > 0) {
-                amountOut = (rmb / supplierRate * 100).round() / 100;
               }
 
               if (amountIn != null && amountOut != null) {
@@ -266,31 +260,6 @@ class _TransactionsPageState extends State<TransactionsPage> {
 
                           const SizedBox(height: 12),
 
-                          TextFormField(
-                            controller: supplierRateController,
-                            keyboardType: const TextInputType.numberWithOptions(
-                              decimal: true,
-                            ),
-                            decoration: const InputDecoration(
-                              labelText: 'Supplier Rate',
-                              hintText: 'e.g. 1.653',
-                            ),
-                            onChanged: (_) {
-                              setDialogState(() {});
-                            },
-                            validator: (value) {
-                              final rate = double.tryParse(value ?? '');
-
-                              if (rate == null || rate <= 0) {
-                                return 'Enter a valid supplier rate';
-                              }
-
-                              return null;
-                            },
-                          ),
-
-                          const SizedBox(height: 20),
-
                           Card(
                             child: Padding(
                               padding: const EdgeInsets.all(16),
@@ -301,16 +270,6 @@ class _TransactionsPageState extends State<TransactionsPage> {
                                     value: _formatMoney(amountIn),
                                   ),
                                   const SizedBox(height: 8),
-                                  _CalculationRow(
-                                    label: 'Amount Out',
-                                    value: _formatMoney(amountOut),
-                                  ),
-                                  const Divider(height: 20),
-                                  _CalculationRow(
-                                    label: 'Margin',
-                                    value: _formatMoney(margin),
-                                    bold: true,
-                                  ),
                                 ],
                               ),
                             ),
@@ -352,9 +311,6 @@ class _TransactionsPageState extends State<TransactionsPage> {
                           customerRate: double.parse(
                             customerRateController.text.trim(),
                           ),
-                          supplierRate: double.parse(
-                            supplierRateController.text.trim(),
-                          ),
                           notes: notesController.text.trim(),
                         );
 
@@ -387,7 +343,6 @@ class _TransactionsPageState extends State<TransactionsPage> {
       transactionNoController.dispose();
       rmbController.dispose();
       customerRateController.dispose();
-      supplierRateController.dispose();
       notesController.dispose();
     }
   }
@@ -465,9 +420,6 @@ class _TransactionsPageState extends State<TransactionsPage> {
                                 Text(
                                   'Amt In: ${_formatMoney(transaction.amountInRm)}',
                                 ),
-                                Text(
-                                  'Amt Out: ${_formatMoney(transaction.amountOutRm)}',
-                                ),
                               ],
                             ),
                           ),
@@ -476,7 +428,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
                             crossAxisAlignment: CrossAxisAlignment.end,
                             children: [
                               Text(
-                                _formatMoney(transaction.marginRm),
+                                _formatMoney(transaction.rmbRequested),
                                 style: const TextStyle(
                                   fontWeight: FontWeight.bold,
                                   fontSize: 16,

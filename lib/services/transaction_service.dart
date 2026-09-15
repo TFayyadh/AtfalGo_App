@@ -20,15 +20,10 @@ class TransactionService {
     required DateTime transactionDate,
     required double rmbRequested,
     required double customerRate,
-    required double supplierRate,
     String? notes,
   }) async {
-    // Standard rounding to 2 decimal places.
+    // Amount In = RMB Requested ÷ Customer Rate
     final amountInRm = (rmbRequested / customerRate * 100).round() / 100;
-
-    final amountOutRm = (rmbRequested / supplierRate * 100).round() / 100;
-
-    final marginRm = ((amountInRm - amountOutRm) * 100).round() / 100;
 
     final response = await _supabase
         .from('transactions')
@@ -39,10 +34,17 @@ class TransactionService {
           'transaction_date': transactionDate.toIso8601String(),
           'rmb_requested': rmbRequested,
           'amount_in_rm': amountInRm,
-          'amount_out_rm': amountOutRm,
-          'margin_rm': marginRm,
+
+          // Supplier cost is now calculated from
+          // supplier_payment_allocations.
+          'amount_out_rm': null,
+          'margin_rm': null,
+
           'customer_rate': customerRate,
-          'supplier_rate': supplierRate,
+
+          // Supplier rate no longer belongs to the transaction.
+          'supplier_rate': null,
+
           'status': 'pending',
           'notes': notes,
         })
