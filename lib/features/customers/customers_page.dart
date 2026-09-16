@@ -153,7 +153,7 @@ class _CustomersPageState extends State<CustomersPage> {
                   try {
                     if (isEditing) {
                       await _customerService.updateCustomer(
-                        id: customer!.id,
+                        id: customer.id,
                         customerCode: codeController.text.trim(),
                         name: nameController.text.trim(),
                         phone: phoneController.text.trim(),

@@ -182,11 +182,10 @@ class _SuppliersPageState extends State<SuppliersPage> {
                   if (!formKey.currentState!.validate()) {
                     return;
                   }
-
                   try {
                     if (isEditing) {
                       await _supplierService.updateSupplier(
-                        id: supplier!.id,
+                        id: supplier.id,
                         supplierCode: codeController.text.trim(),
                         name: nameController.text.trim(),
                         phone: phoneController.text.trim(),

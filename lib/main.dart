@@ -3,7 +3,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'core/config/supabase_config.dart';
 import 'features/auth/login_page.dart';
-import 'features/customers/customers_page.dart';
 import 'features/dashboard/dashboard_page.dart';
 
 Future<void> main() async {
