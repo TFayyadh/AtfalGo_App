@@ -194,7 +194,9 @@ class _SupplierPaymentDetailsPageState
 
     final amountRm = (allocation['amount_rm'] as num?)?.toDouble();
 
-    final transactionId = allocation['transaction_id'] as String?;
+    final transaction = allocation['transactions'] as Map<String, dynamic>?;
+
+    final transactionNo = transaction?['transaction_no'] as String?;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -218,7 +220,7 @@ class _SupplierPaymentDetailsPageState
 
             const SizedBox(height: 10),
 
-            _buildInfoRow('Transaction ID', transactionId ?? '-'),
+            _buildInfoRow('Transaction', transactionNo ?? '-', bold: true),
 
             _buildInfoRow(
               'RMB Allocated',
@@ -286,6 +288,10 @@ class _SupplierPaymentDetailsPageState
   }
 
   Future<void> _openAllocationPage() async {
+    if (widget.payment.status == 'completed') {
+      return;
+    }
+
     await Navigator.push(
       context,
       MaterialPageRoute(
@@ -327,9 +333,15 @@ class _SupplierPaymentDetailsPageState
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton.icon(
-                      onPressed: _openAllocationPage,
+                      onPressed: widget.payment.status == 'completed'
+                          ? null
+                          : _openAllocationPage,
                       icon: const Icon(Icons.add),
-                      label: const Text('Allocate Payment'),
+                      label: Text(
+                        widget.payment.status == 'completed'
+                            ? 'Payment Completed'
+                            : 'Allocate Payment',
+                      ),
                     ),
                   ),
 

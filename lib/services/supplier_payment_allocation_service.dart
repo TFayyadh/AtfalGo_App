@@ -143,7 +143,13 @@ class SupplierPaymentAllocationService {
   ) async {
     final response = await _supabase
         .from('supplier_payment_allocations')
-        .select()
+        .select('''
+        *,
+        transactions (
+          transaction_no,
+          rmb_requested
+        )
+      ''')
         .eq('supplier_payment_id', supplierPaymentId);
 
     return List<Map<String, dynamic>>.from(response);

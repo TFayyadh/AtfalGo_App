@@ -5,6 +5,8 @@ import '../../models/supplier_payment.dart';
 
 import '../../services/supplier_service.dart';
 import '../../services/supplier_payment_service.dart';
+import '../../services/supplier_payment_allocation_service.dart';
+
 import '../supplier_payment_allocations/supplier_payment_allocation_page.dart';
 import 'supplier_payment_details_page.dart';
 
@@ -20,8 +22,13 @@ class _SupplierPaymentsPageState extends State<SupplierPaymentsPage> {
 
   final SupplierService _supplierService = SupplierService();
 
+  final SupplierPaymentAllocationService _allocationService =
+      SupplierPaymentAllocationService();
+
   List<SupplierPayment> _payments = [];
   List<Supplier> _suppliers = [];
+
+  final Map<String, double> _allocatedAmounts = {};
 
   bool _loading = true;
   String _searchQuery = '';
@@ -43,11 +50,30 @@ class _SupplierPaymentsPageState extends State<SupplierPaymentsPage> {
         _supplierService.getSuppliers(),
       ]);
 
+      final payments = results[0] as List<SupplierPayment>;
+      final suppliers = results[1] as List<Supplier>;
+
+      final allocationResults = await Future.wait(
+        payments.map(
+          (payment) =>
+              _allocationService.getAllocatedAmountForPayment(payment.id),
+        ),
+      );
+
+      final allocatedAmounts = <String, double>{};
+
+      for (int i = 0; i < payments.length; i++) {
+        allocatedAmounts[payments[i].id] = allocationResults[i];
+      }
+
       if (!mounted) return;
 
       setState(() {
-        _payments = results[0] as List<SupplierPayment>;
-        _suppliers = results[1] as List<Supplier>;
+        _payments = payments;
+        _suppliers = suppliers;
+        _allocatedAmounts
+          ..clear()
+          ..addAll(allocatedAmounts);
         _loading = false;
       });
     } catch (e) {
@@ -102,6 +128,17 @@ class _SupplierPaymentsPageState extends State<SupplierPaymentsPage> {
 
   String _formatMoney(double amount) {
     return 'RM ${amount.toStringAsFixed(2)}';
+  }
+
+  double _allocatedAmount(String paymentId) {
+    return _allocatedAmounts[paymentId] ?? 0;
+  }
+
+  double _remainingAmount(SupplierPayment payment) {
+    final allocated = _allocatedAmount(payment.id);
+    final remaining = payment.amountRm - allocated;
+
+    return remaining < 0 ? 0 : remaining;
   }
 
   Future<void> _showPaymentDialog() async {
@@ -382,7 +419,28 @@ class _SupplierPaymentsPageState extends State<SupplierPaymentsPage> {
                                         fontSize: 16,
                                       ),
                                     ),
+
+                                    const SizedBox(height: 6),
+
+                                    Text(
+                                      'Allocated: ${_formatMoney(_allocatedAmount(payment.id))}',
+                                      style: const TextStyle(fontSize: 12),
+                                    ),
+
+                                    Text(
+                                      'Remaining: ${_formatMoney(_remainingAmount(payment))}',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                        color:
+                                            _remainingAmount(payment) <= 0.001
+                                            ? Colors.green
+                                            : null,
+                                      ),
+                                    ),
+
                                     const SizedBox(height: 4),
+
                                     Text(
                                       payment.status,
                                       style: const TextStyle(fontSize: 12),

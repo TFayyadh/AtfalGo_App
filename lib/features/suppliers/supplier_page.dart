@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../../models/supplier.dart';
 import '../../services/supplier_service.dart';
 
+import 'supplier_details_page.dart';
+
 class SuppliersPage extends StatefulWidget {
   const SuppliersPage({super.key});
 
@@ -369,8 +371,15 @@ class _SuppliersPageState extends State<SuppliersPage> {
                               _showSupplierOptions(supplier);
                             },
                           ),
-                          onTap: () {
-                            _showSupplierDialog(supplier: supplier);
+                          onTap: () async {
+                            await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) =>
+                                    SupplierDetailsPage(supplier: supplier),
+                              ),
+                            );
+                            await _loadSuppliers();
                           },
                         );
                       },

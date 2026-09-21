@@ -15,6 +15,20 @@ class SupplierPaymentService {
         .toList();
   }
 
+  Future<List<SupplierPayment>> getSupplierPaymentsBySupplier(
+    String supplierId,
+  ) async {
+    final response = await _supabase
+        .from('supplier_payments')
+        .select()
+        .eq('supplier_id', supplierId)
+        .order('payment_date', ascending: false);
+
+    return (response as List)
+        .map((item) => SupplierPayment.fromMap(item))
+        .toList();
+  }
+
   Future<SupplierPayment> createSupplierPayment({
     required String supplierId,
     required DateTime paymentDate,

@@ -40,6 +40,8 @@ class _SupplierPaymentAllocationPageState
   double get _remainingPaymentAmount =>
       widget.payment.amountRm - _allocatedAmount;
 
+  bool get _isPaymentCompleted => widget.payment.status == 'completed';
+
   @override
   void initState() {
     super.initState();
@@ -149,6 +151,15 @@ class _SupplierPaymentAllocationPageState
 
   Future<void> _saveAllocations() async {
     if (_isSaving) return;
+
+    if (_isPaymentCompleted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('This supplier payment is already completed.'),
+        ),
+      );
+      return;
+    }
 
     bool hasAllocation = false;
 
@@ -326,6 +337,13 @@ class _SupplierPaymentAllocationPageState
               '${_afterNewAllocationRemaining.toStringAsFixed(2)}',
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
+            if (_isPaymentCompleted) ...[
+              const SizedBox(height: 8),
+              const Text(
+                'Payment Completed — Allocation Locked',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ],
           ],
         ),
       ),
@@ -392,7 +410,7 @@ class _SupplierPaymentAllocationPageState
 
             TextField(
               controller: rmbController,
-              enabled: !isFullyAllocated,
+              enabled: !_isPaymentCompleted && !isFullyAllocated,
               keyboardType: const TextInputType.numberWithOptions(
                 decimal: true,
               ),
@@ -411,7 +429,7 @@ class _SupplierPaymentAllocationPageState
 
             TextField(
               controller: rateController,
-              enabled: !isFullyAllocated,
+              enabled: !_isPaymentCompleted && !isFullyAllocated,
               keyboardType: const TextInputType.numberWithOptions(
                 decimal: true,
               ),
@@ -444,14 +462,20 @@ class _SupplierPaymentAllocationPageState
         child: SizedBox(
           width: double.infinity,
           child: ElevatedButton(
-            onPressed: _isSaving ? null : _saveAllocations,
+            onPressed: _isSaving || _isPaymentCompleted
+                ? null
+                : _saveAllocations,
             child: _isSaving
                 ? const SizedBox(
                     height: 20,
                     width: 20,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
-                : const Text('Save Allocation'),
+                : Text(
+                    _isPaymentCompleted
+                        ? 'Payment Completed'
+                        : 'Save Allocation',
+                  ),
           ),
         ),
       ),
