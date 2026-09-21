@@ -6,6 +6,7 @@ import '../../models/supplier_payment.dart';
 import '../../services/supplier_service.dart';
 import '../../services/supplier_payment_service.dart';
 import '../supplier_payment_allocations/supplier_payment_allocation_page.dart';
+import 'supplier_payment_details_page.dart';
 
 class SupplierPaymentsPage extends StatefulWidget {
   const SupplierPaymentsPage({super.key});
@@ -393,13 +394,15 @@ class _SupplierPaymentsPageState extends State<SupplierPaymentsPage> {
                                           context,
                                           MaterialPageRoute(
                                             builder: (_) =>
-                                                SupplierPaymentAllocationPage(
+                                                SupplierPaymentDetailsPage(
                                                   payment: payment,
                                                 ),
                                           ),
                                         );
+
+                                        await _loadData();
                                       },
-                                      child: const Text('Allocate'),
+                                      child: const Text('View Details'),
                                     ),
                                   ],
                                 ),
