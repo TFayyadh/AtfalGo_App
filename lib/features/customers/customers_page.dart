@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../../models/customer.dart';
 import '../../services/customer_service.dart';
 
+import 'customer_details_page.dart';
+
 class CustomersPage extends StatefulWidget {
   const CustomersPage({super.key});
 
@@ -335,8 +337,16 @@ class _CustomersPageState extends State<CustomersPage> {
                               _showCustomerOptions(customer);
                             },
                           ),
-                          onTap: () {
-                            _showCustomerDialog(customer: customer);
+                          onTap: () async {
+                            await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) =>
+                                    CustomerDetailsPage(customer: customer),
+                              ),
+                            );
+
+                            await _loadCustomers();
                           },
                         );
                       },

@@ -54,6 +54,18 @@ class TransactionService {
     return Transaction.fromMap(response);
   }
 
+  Future<List<Transaction>> getTransactionsByCustomer(String customerId) async {
+    final response = await _supabase
+        .from('transactions')
+        .select()
+        .eq('customer_id', customerId)
+        .order('transaction_date', ascending: false);
+
+    return (response as List)
+        .map((item) => Transaction.fromMap(item as Map<String, dynamic>))
+        .toList();
+  }
+
   Future<void> updateTransactionStatus({
     required String id,
     required String status,
