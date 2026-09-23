@@ -151,177 +151,169 @@ class _SupplierPaymentsPageState extends State<SupplierPaymentsPage> {
     Supplier? selectedSupplier;
     String? selectedPaymentMethod;
 
-    try {
-      final saved = await showDialog<bool>(
-        context: context,
-        builder: (dialogContext) {
-          return StatefulBuilder(
-            builder: (context, setDialogState) {
-              return AlertDialog(
-                title: const Text('Add Supplier Payment'),
-                content: SizedBox(
-                  width: 450,
-                  child: Form(
-                    key: formKey,
-                    child: SingleChildScrollView(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          DropdownButtonFormField<Supplier>(
-                            value: selectedSupplier,
-                            decoration: const InputDecoration(
-                              labelText: 'Supplier',
-                            ),
-                            items: _suppliers.map((supplier) {
-                              return DropdownMenuItem<Supplier>(
-                                value: supplier,
-                                child: Text(
-                                  '${supplier.supplierCode} - ${supplier.name}',
-                                ),
-                              );
-                            }).toList(),
-                            onChanged: (value) {
-                              setDialogState(() {
-                                selectedSupplier = value;
-                              });
-                            },
-                            validator: (value) {
-                              if (value == null) {
-                                return 'Please select a supplier';
-                              }
-
-                              return null;
-                            },
+    final saved = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: const Text('Add Supplier Payment'),
+              content: SizedBox(
+                width: 450,
+                child: Form(
+                  key: formKey,
+                  child: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        DropdownButtonFormField<Supplier>(
+                          value: selectedSupplier,
+                          decoration: const InputDecoration(
+                            labelText: 'Supplier',
                           ),
-
-                          const SizedBox(height: 12),
-
-                          TextFormField(
-                            controller: amountController,
-                            keyboardType: const TextInputType.numberWithOptions(
-                              decimal: true,
-                            ),
-                            decoration: const InputDecoration(
-                              labelText: 'Amount (RM)',
-                              hintText: 'e.g. 6049.61',
-                            ),
-                            validator: (value) {
-                              final amount = double.tryParse(value ?? '');
-
-                              if (amount == null || amount <= 0) {
-                                return 'Enter a valid RM amount';
-                              }
-
-                              return null;
-                            },
-                          ),
-
-                          const SizedBox(height: 12),
-
-                          DropdownButtonFormField<String>(
-                            value: selectedPaymentMethod,
-                            decoration: const InputDecoration(
-                              labelText: 'Payment Method',
-                            ),
-                            items: const [
-                              DropdownMenuItem(
-                                value: 'Bank Transfer',
-                                child: Text('Bank Transfer'),
+                          items: _suppliers.map((supplier) {
+                            return DropdownMenuItem<Supplier>(
+                              value: supplier,
+                              child: Text(
+                                '${supplier.supplierCode} - ${supplier.name}',
                               ),
-                              DropdownMenuItem(
-                                value: 'Cash',
-                                child: Text('Cash'),
-                              ),
-                              DropdownMenuItem(
-                                value: 'Online Transfer',
-                                child: Text('Online Transfer'),
-                              ),
-                              DropdownMenuItem(
-                                value: 'Other',
-                                child: Text('Other'),
-                              ),
-                            ],
-                            onChanged: (value) {
-                              setDialogState(() {
-                                selectedPaymentMethod = value;
-                              });
-                            },
+                            );
+                          }).toList(),
+                          onChanged: (value) {
+                            setDialogState(() {
+                              selectedSupplier = value;
+                            });
+                          },
+                          validator: (value) {
+                            if (value == null) {
+                              return 'Please select a supplier';
+                            }
+
+                            return null;
+                          },
+                        ),
+
+                        const SizedBox(height: 12),
+
+                        TextFormField(
+                          controller: amountController,
+                          keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true,
                           ),
+                          decoration: const InputDecoration(
+                            labelText: 'Amount (RM)',
+                            hintText: 'e.g. 6049.61',
+                          ),
+                          validator: (value) {
+                            final amount = double.tryParse(value ?? '');
 
-                          const SizedBox(height: 12),
+                            if (amount == null || amount <= 0) {
+                              return 'Enter a valid RM amount';
+                            }
 
-                          TextFormField(
-                            controller: referenceController,
-                            decoration: const InputDecoration(
-                              labelText: 'Reference No',
-                              hintText: 'e.g. bank transfer reference',
+                            return null;
+                          },
+                        ),
+
+                        const SizedBox(height: 12),
+
+                        DropdownButtonFormField<String>(
+                          value: selectedPaymentMethod,
+                          decoration: const InputDecoration(
+                            labelText: 'Payment Method',
+                          ),
+                          items: const [
+                            DropdownMenuItem(
+                              value: 'Bank Transfer',
+                              child: Text('Bank Transfer'),
                             ),
-                          ),
-
-                          const SizedBox(height: 12),
-
-                          TextFormField(
-                            controller: notesController,
-                            maxLines: 3,
-                            decoration: const InputDecoration(
-                              labelText: 'Notes',
+                            DropdownMenuItem(
+                              value: 'Cash',
+                              child: Text('Cash'),
                             ),
+                            DropdownMenuItem(
+                              value: 'Online Transfer',
+                              child: Text('Online Transfer'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'Other',
+                              child: Text('Other'),
+                            ),
+                          ],
+                          onChanged: (value) {
+                            setDialogState(() {
+                              selectedPaymentMethod = value;
+                            });
+                          },
+                        ),
+
+                        const SizedBox(height: 12),
+
+                        TextFormField(
+                          controller: referenceController,
+                          decoration: const InputDecoration(
+                            labelText: 'Reference No',
+                            hintText: 'e.g. bank transfer reference',
                           ),
-                        ],
-                      ),
+                        ),
+
+                        const SizedBox(height: 12),
+
+                        TextFormField(
+                          controller: notesController,
+                          maxLines: 3,
+                          decoration: const InputDecoration(labelText: 'Notes'),
+                        ),
+                      ],
                     ),
                   ),
                 ),
-                actions: [
-                  TextButton(
-                    onPressed: () {
-                      Navigator.pop(dialogContext, false);
-                    },
-                    child: const Text('Cancel'),
-                  ),
-                  ElevatedButton(
-                    onPressed: () async {
-                      if (!formKey.currentState!.validate()) {
-                        return;
-                      }
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.pop(dialogContext, false);
+                  },
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: () async {
+                    if (!formKey.currentState!.validate()) {
+                      return;
+                    }
 
-                      try {
-                        await _paymentService.createSupplierPayment(
-                          supplierId: selectedSupplier!.id,
-                          paymentDate: DateTime.now(),
-                          amountRm: double.parse(amountController.text.trim()),
-                          paymentMethod: selectedPaymentMethod,
-                          referenceNo: referenceController.text.trim(),
-                          notes: notesController.text.trim(),
+                    try {
+                      await _paymentService.createSupplierPayment(
+                        supplierId: selectedSupplier!.id,
+                        paymentDate: DateTime.now(),
+                        amountRm: double.parse(amountController.text.trim()),
+                        paymentMethod: selectedPaymentMethod,
+                        referenceNo: referenceController.text.trim(),
+                        notes: notesController.text.trim(),
+                      );
+
+                      if (dialogContext.mounted) {
+                        Navigator.pop(dialogContext, true);
+                      }
+                    } catch (e) {
+                      if (dialogContext.mounted) {
+                        ScaffoldMessenger.of(dialogContext).showSnackBar(
+                          SnackBar(content: Text('Error saving payment: $e')),
                         );
-
-                        if (dialogContext.mounted) {
-                          Navigator.pop(dialogContext, true);
-                        }
-                      } catch (e) {
-                        if (dialogContext.mounted) {
-                          ScaffoldMessenger.of(dialogContext).showSnackBar(
-                            SnackBar(content: Text('Error saving payment: $e')),
-                          );
-                        }
                       }
-                    },
-                    child: const Text('Save'),
-                  ),
-                ],
-              );
-            },
-          );
-        },
-      );
+                    }
+                  },
+                  child: const Text('Save'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
 
-      if (saved == true && mounted) {
-        await _loadData();
-      }
-    } finally {
-      amountController.dispose();
-      referenceController.dispose();
-      notesController.dispose();
+    if (saved == true && mounted) {
+      await _loadData();
     }
   }
 

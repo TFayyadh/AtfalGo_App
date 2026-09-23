@@ -84,122 +84,114 @@ class _CustomersPageState extends State<CustomersPage> {
 
     final formKey = GlobalKey<FormState>();
 
-    try {
-      final saved = await showDialog<bool>(
-        context: context,
-        builder: (dialogContext) {
-          return AlertDialog(
-            title: Text(isEditing ? 'Edit Customer' : 'Add Customer'),
-            content: Form(
-              key: formKey,
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    TextFormField(
-                      controller: codeController,
-                      decoration: const InputDecoration(
-                        labelText: 'Customer Code',
-                        hintText: 'e.g. C001',
-                      ),
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return 'Customer Code is required';
-                        }
-                        return null;
-                      },
+    final saved = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: Text(isEditing ? 'Edit Customer' : 'Add Customer'),
+          content: Form(
+            key: formKey,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextFormField(
+                    controller: codeController,
+                    decoration: const InputDecoration(
+                      labelText: 'Customer Code',
+                      hintText: 'e.g. C001',
                     ),
-                    const SizedBox(height: 12),
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Customer Code is required';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 12),
 
-                    TextFormField(
-                      controller: nameController,
-                      decoration: const InputDecoration(labelText: 'Name'),
-                    ),
-                    const SizedBox(height: 12),
+                  TextFormField(
+                    controller: nameController,
+                    decoration: const InputDecoration(labelText: 'Name'),
+                  ),
+                  const SizedBox(height: 12),
 
-                    TextFormField(
-                      controller: phoneController,
-                      decoration: const InputDecoration(labelText: 'Phone'),
-                    ),
-                    const SizedBox(height: 12),
+                  TextFormField(
+                    controller: phoneController,
+                    decoration: const InputDecoration(labelText: 'Phone'),
+                  ),
+                  const SizedBox(height: 12),
 
-                    TextFormField(
-                      controller: alipayController,
-                      decoration: const InputDecoration(labelText: 'Alipay ID'),
-                    ),
-                    const SizedBox(height: 12),
+                  TextFormField(
+                    controller: alipayController,
+                    decoration: const InputDecoration(labelText: 'Alipay ID'),
+                  ),
+                  const SizedBox(height: 12),
 
-                    TextFormField(
-                      controller: notesController,
-                      maxLines: 3,
-                      decoration: const InputDecoration(labelText: 'Notes'),
-                    ),
-                  ],
-                ),
+                  TextFormField(
+                    controller: notesController,
+                    maxLines: 3,
+                    decoration: const InputDecoration(labelText: 'Notes'),
+                  ),
+                ],
               ),
             ),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(dialogContext, false);
-                },
-                child: const Text('Cancel'),
-              ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(dialogContext, false);
+              },
+              child: const Text('Cancel'),
+            ),
 
-              ElevatedButton(
-                onPressed: () async {
-                  if (!formKey.currentState!.validate()) {
-                    return;
+            ElevatedButton(
+              onPressed: () async {
+                if (!formKey.currentState!.validate()) {
+                  return;
+                }
+
+                try {
+                  if (isEditing) {
+                    await _customerService.updateCustomer(
+                      id: customer.id,
+                      customerCode: codeController.text.trim(),
+                      name: nameController.text.trim(),
+                      phone: phoneController.text.trim(),
+                      alipayId: alipayController.text.trim(),
+                      notes: notesController.text.trim(),
+                    );
+                  } else {
+                    await _customerService.createCustomer(
+                      customerCode: codeController.text.trim(),
+                      name: nameController.text.trim(),
+                      phone: phoneController.text.trim(),
+                      alipayId: alipayController.text.trim(),
+                      notes: notesController.text.trim(),
+                    );
                   }
 
-                  try {
-                    if (isEditing) {
-                      await _customerService.updateCustomer(
-                        id: customer.id,
-                        customerCode: codeController.text.trim(),
-                        name: nameController.text.trim(),
-                        phone: phoneController.text.trim(),
-                        alipayId: alipayController.text.trim(),
-                        notes: notesController.text.trim(),
-                      );
-                    } else {
-                      await _customerService.createCustomer(
-                        customerCode: codeController.text.trim(),
-                        name: nameController.text.trim(),
-                        phone: phoneController.text.trim(),
-                        alipayId: alipayController.text.trim(),
-                        notes: notesController.text.trim(),
-                      );
-                    }
-
-                    if (dialogContext.mounted) {
-                      Navigator.pop(dialogContext, true);
-                    }
-                  } catch (e) {
-                    if (dialogContext.mounted) {
-                      ScaffoldMessenger.of(dialogContext).showSnackBar(
-                        SnackBar(content: Text('Error saving customer: $e')),
-                      );
-                    }
+                  if (dialogContext.mounted) {
+                    Navigator.pop(dialogContext, true);
                   }
-                },
-                child: Text(isEditing ? 'Update' : 'Save'),
-              ),
-            ],
-          );
-        },
-      );
+                } catch (e) {
+                  if (dialogContext.mounted) {
+                    ScaffoldMessenger.of(dialogContext).showSnackBar(
+                      SnackBar(content: Text('Error saving customer: $e')),
+                    );
+                  }
+                }
+              },
+              child: Text(isEditing ? 'Update' : 'Save'),
+            ),
+          ],
+        );
+      },
+    );
 
-      // Only reload AFTER the dialog has completely closed.
-      if (saved == true && mounted) {
-        await _loadCustomers();
-      }
-    } finally {
-      codeController.dispose();
-      nameController.dispose();
-      phoneController.dispose();
-      alipayController.dispose();
-      notesController.dispose();
+    // Only reload AFTER the dialog has completely closed.
+    if (saved == true && mounted) {
+      await _loadCustomers();
     }
   }
 

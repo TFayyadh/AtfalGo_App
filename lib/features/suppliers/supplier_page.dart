@@ -94,149 +94,139 @@ class _SuppliersPageState extends State<SuppliersPage> {
 
     final formKey = GlobalKey<FormState>();
 
-    try {
-      final saved = await showDialog<bool>(
-        context: context,
-        builder: (dialogContext) {
-          return AlertDialog(
-            title: Text(isEditing ? 'Edit Supplier' : 'Add Supplier'),
-            content: Form(
-              key: formKey,
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    TextFormField(
-                      controller: codeController,
-                      decoration: const InputDecoration(
-                        labelText: 'Supplier Code',
-                        hintText: 'e.g. S001',
-                      ),
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return 'Supplier Code is required';
-                        }
-                        return null;
-                      },
+    final saved = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: Text(isEditing ? 'Edit Supplier' : 'Add Supplier'),
+          content: Form(
+            key: formKey,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextFormField(
+                    controller: codeController,
+                    decoration: const InputDecoration(
+                      labelText: 'Supplier Code',
+                      hintText: 'e.g. S001',
                     ),
-                    const SizedBox(height: 12),
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Supplier Code is required';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 12),
 
-                    TextFormField(
-                      controller: nameController,
-                      decoration: const InputDecoration(
-                        labelText: 'Supplier Name',
-                      ),
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return 'Supplier Name is required';
-                        }
-                        return null;
-                      },
+                  TextFormField(
+                    controller: nameController,
+                    decoration: const InputDecoration(
+                      labelText: 'Supplier Name',
                     ),
-                    const SizedBox(height: 12),
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Supplier Name is required';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 12),
 
-                    TextFormField(
-                      controller: phoneController,
-                      decoration: const InputDecoration(labelText: 'Phone'),
-                    ),
-                    const SizedBox(height: 12),
+                  TextFormField(
+                    controller: phoneController,
+                    decoration: const InputDecoration(labelText: 'Phone'),
+                  ),
+                  const SizedBox(height: 12),
 
-                    TextFormField(
-                      controller: bankNameController,
-                      decoration: const InputDecoration(labelText: 'Bank Name'),
-                    ),
-                    const SizedBox(height: 12),
+                  TextFormField(
+                    controller: bankNameController,
+                    decoration: const InputDecoration(labelText: 'Bank Name'),
+                  ),
+                  const SizedBox(height: 12),
 
-                    TextFormField(
-                      controller: bankAccountController,
-                      decoration: const InputDecoration(
-                        labelText: 'Bank Account',
-                      ),
+                  TextFormField(
+                    controller: bankAccountController,
+                    decoration: const InputDecoration(
+                      labelText: 'Bank Account',
                     ),
-                    const SizedBox(height: 12),
+                  ),
+                  const SizedBox(height: 12),
 
-                    TextFormField(
-                      controller: accountNameController,
-                      decoration: const InputDecoration(
-                        labelText: 'Account Name',
-                      ),
+                  TextFormField(
+                    controller: accountNameController,
+                    decoration: const InputDecoration(
+                      labelText: 'Account Name',
                     ),
-                    const SizedBox(height: 12),
+                  ),
+                  const SizedBox(height: 12),
 
-                    TextFormField(
-                      controller: notesController,
-                      maxLines: 3,
-                      decoration: const InputDecoration(labelText: 'Notes'),
-                    ),
-                  ],
-                ),
+                  TextFormField(
+                    controller: notesController,
+                    maxLines: 3,
+                    decoration: const InputDecoration(labelText: 'Notes'),
+                  ),
+                ],
               ),
             ),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(dialogContext, false);
-                },
-                child: const Text('Cancel'),
-              ),
-              ElevatedButton(
-                onPressed: () async {
-                  if (!formKey.currentState!.validate()) {
-                    return;
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(dialogContext, false);
+              },
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                if (!formKey.currentState!.validate()) {
+                  return;
+                }
+                try {
+                  if (isEditing) {
+                    await _supplierService.updateSupplier(
+                      id: supplier.id,
+                      supplierCode: codeController.text.trim(),
+                      name: nameController.text.trim(),
+                      phone: phoneController.text.trim(),
+                      bankName: bankNameController.text.trim(),
+                      bankAccount: bankAccountController.text.trim(),
+                      accountName: accountNameController.text.trim(),
+                      notes: notesController.text.trim(),
+                    );
+                  } else {
+                    await _supplierService.createSupplier(
+                      supplierCode: codeController.text.trim(),
+                      name: nameController.text.trim(),
+                      phone: phoneController.text.trim(),
+                      bankName: bankNameController.text.trim(),
+                      bankAccount: bankAccountController.text.trim(),
+                      accountName: accountNameController.text.trim(),
+                      notes: notesController.text.trim(),
+                    );
                   }
-                  try {
-                    if (isEditing) {
-                      await _supplierService.updateSupplier(
-                        id: supplier.id,
-                        supplierCode: codeController.text.trim(),
-                        name: nameController.text.trim(),
-                        phone: phoneController.text.trim(),
-                        bankName: bankNameController.text.trim(),
-                        bankAccount: bankAccountController.text.trim(),
-                        accountName: accountNameController.text.trim(),
-                        notes: notesController.text.trim(),
-                      );
-                    } else {
-                      await _supplierService.createSupplier(
-                        supplierCode: codeController.text.trim(),
-                        name: nameController.text.trim(),
-                        phone: phoneController.text.trim(),
-                        bankName: bankNameController.text.trim(),
-                        bankAccount: bankAccountController.text.trim(),
-                        accountName: accountNameController.text.trim(),
-                        notes: notesController.text.trim(),
-                      );
-                    }
 
-                    if (dialogContext.mounted) {
-                      Navigator.pop(dialogContext, true);
-                    }
-                  } catch (e) {
-                    if (dialogContext.mounted) {
-                      ScaffoldMessenger.of(dialogContext).showSnackBar(
-                        SnackBar(content: Text('Error saving supplier: $e')),
-                      );
-                    }
+                  if (dialogContext.mounted) {
+                    Navigator.pop(dialogContext, true);
                   }
-                },
-                child: Text(isEditing ? 'Update' : 'Save'),
-              ),
-            ],
-          );
-        },
-      );
+                } catch (e) {
+                  if (dialogContext.mounted) {
+                    ScaffoldMessenger.of(dialogContext).showSnackBar(
+                      SnackBar(content: Text('Error saving supplier: $e')),
+                    );
+                  }
+                }
+              },
+              child: Text(isEditing ? 'Update' : 'Save'),
+            ),
+          ],
+        );
+      },
+    );
 
-      if (saved == true && mounted) {
-        await _loadSuppliers();
-      }
-    } finally {
-      codeController.dispose();
-      nameController.dispose();
-      phoneController.dispose();
-      bankNameController.dispose();
-      bankAccountController.dispose();
-      accountNameController.dispose();
-      notesController.dispose();
+    if (saved == true && mounted) {
+      await _loadSuppliers();
     }
   }
 
