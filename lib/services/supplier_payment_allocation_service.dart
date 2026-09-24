@@ -147,7 +147,12 @@ class SupplierPaymentAllocationService {
         *,
         transactions (
           transaction_no,
-          rmb_requested
+          rmb_requested,
+          customer_id,
+          customers (
+            customer_code,
+            name
+          )
         )
       ''')
         .eq('supplier_payment_id', supplierPaymentId);

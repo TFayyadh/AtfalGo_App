@@ -11,7 +11,8 @@ import '../supplier_payment_allocations/supplier_payment_allocation_page.dart';
 import 'supplier_payment_details_page.dart';
 
 class SupplierPaymentsPage extends StatefulWidget {
-  const SupplierPaymentsPage({super.key});
+  final bool showPendingOnly;
+  const SupplierPaymentsPage({super.key, this.showPendingOnly = false});
 
   @override
   State<SupplierPaymentsPage> createState() => _SupplierPaymentsPageState();
@@ -90,13 +91,17 @@ class _SupplierPaymentsPageState extends State<SupplierPaymentsPage> {
   }
 
   List<SupplierPayment> get _filteredPayments {
-    if (_searchQuery.trim().isEmpty) {
-      return _payments;
-    }
-
     final query = _searchQuery.trim().toLowerCase();
 
     return _payments.where((payment) {
+      if (widget.showPendingOnly && payment.status != 'pending') {
+        return false;
+      }
+
+      if (query.isEmpty) {
+        return true;
+      }
+
       final supplier = _getSupplier(payment.supplierId);
 
       return payment.paymentNo.toLowerCase().contains(query) ||

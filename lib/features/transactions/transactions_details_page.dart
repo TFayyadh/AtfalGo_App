@@ -329,6 +329,14 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
             style: const TextStyle(fontWeight: FontWeight.bold),
           ),
 
+          if (supplierPayment?['payment_no'] != null) ...[
+            const SizedBox(height: 4),
+            Text(
+              'Payment: ${supplierPayment!['payment_no']}',
+              style: const TextStyle(fontSize: 12),
+            ),
+          ],
+
           const SizedBox(height: 10),
 
           _DetailRow(label: 'RMB Allocated', value: _formatRmb(rmbAllocated)),

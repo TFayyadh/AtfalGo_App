@@ -228,30 +228,9 @@ class _DashboardPageState extends State<DashboardPage> {
                         const SizedBox(width: 12),
                         Expanded(
                           child: _summaryCard(
-                            'Suppliers',
-                            _totalSuppliers.toString(),
-                            Icons.business,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _summaryCard(
                             'Transactions',
                             _totalTransactions.toString(),
                             Icons.swap_horiz,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: _summaryCard(
-                            'Supplier Payments',
-                            _totalSupplierPayments.toString(),
-                            Icons.payment,
                           ),
                         ),
                       ],
@@ -306,18 +285,49 @@ class _DashboardPageState extends State<DashboardPage> {
                     Row(
                       children: [
                         Expanded(
-                          child: _summaryCard(
-                            'Pending Transactions',
-                            _pendingTransactions.toString(),
-                            Icons.pending_actions,
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(12),
+                            onTap: () async {
+                              await Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const TransactionsPage(
+                                    showPendingOnly: true,
+                                  ),
+                                ),
+                              );
+
+                              await _loadDashboard();
+                            },
+                            child: _summaryCard(
+                              'Pending Transactions',
+                              _pendingTransactions.toString(),
+                              Icons.pending_actions,
+                            ),
                           ),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
-                          child: _summaryCard(
-                            'Pending Payments',
-                            _pendingSupplierPayments.toString(),
-                            Icons.hourglass_empty,
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(12),
+                            onTap: () async {
+                              await Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      const SupplierPaymentsPage(
+                                        showPendingOnly: true,
+                                      ),
+                                ),
+                              );
+
+                              await _loadDashboard();
+                            },
+                            child: _summaryCard(
+                              'Pending Payments',
+                              _pendingSupplierPayments.toString(),
+                              Icons.hourglass_empty,
+                            ),
                           ),
                         ),
                       ],

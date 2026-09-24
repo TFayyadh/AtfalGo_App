@@ -84,6 +84,14 @@ class _SupplierPaymentDetailsPageState
     });
   }
 
+  double get _totalAllocatedRmb {
+    return _allocations.fold<double>(0, (total, allocation) {
+      final amount = (allocation['rmb_allocated'] as num?)?.toDouble() ?? 0;
+
+      return total + amount;
+    });
+  }
+
   double get _remainingRm {
     final remaining = widget.payment.amountRm - _totalAllocatedRm;
 
@@ -106,7 +114,12 @@ class _SupplierPaymentDetailsPageState
         '${local.year}';
   }
 
-  Widget _buildInfoRow(String label, String value, {bool bold = false}) {
+  Widget _buildInfoRow(
+    String label,
+    String value, {
+    bool bold = false,
+    Color? fontColor,
+  }) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 5),
       child: Row(
@@ -121,6 +134,7 @@ class _SupplierPaymentDetailsPageState
               value,
               style: TextStyle(
                 fontWeight: bold ? FontWeight.bold : FontWeight.normal,
+                color: fontColor,
               ),
             ),
           ),
@@ -163,11 +177,49 @@ class _SupplierPaymentDetailsPageState
               bold: true,
             ),
 
-            _buildInfoRow('Allocated', _formatMoney(_totalAllocatedRm)),
+            _buildInfoRow(
+              'Allocated',
+              _formatMoney(_totalAllocatedRm),
+              bold: true,
+            ),
+
+            _buildInfoRow(
+              'RMB Allocated',
+              'RMB ${_totalAllocatedRmb.toStringAsFixed(2)}',
+              bold: true,
+            ),
 
             _buildInfoRow('Remaining', _formatMoney(_remainingRm), bold: true),
 
-            _buildInfoRow('Status', widget.payment.status, bold: true),
+            if (widget.payment.status == 'completed')
+              _buildInfoRow(
+                'Reconciliation',
+                '✓ Fully Allocated',
+                bold: true,
+                fontColor: Colors.green,
+              )
+            else
+              _buildInfoRow(
+                'Reconciliation',
+                '${_formatMoney(_remainingRm)} remaining',
+                bold: true,
+                fontColor: Colors.red,
+              ),
+
+            if (widget.payment.status == 'completed')
+              _buildInfoRow(
+                'Status',
+                '✓ Completed',
+                bold: true,
+                fontColor: Colors.green,
+              )
+            else
+              _buildInfoRow(
+                'Status',
+                'Pending',
+                bold: true,
+                fontColor: Colors.red,
+              ),
 
             const Divider(),
 
@@ -194,9 +246,21 @@ class _SupplierPaymentDetailsPageState
 
     final amountRm = (allocation['amount_rm'] as num?)?.toDouble();
 
+    final allocationPercentage = widget.payment.amountRm > 0
+        ? ((amountRm ?? 0) / widget.payment.amountRm) * 100
+        : 0;
+
     final transaction = allocation['transactions'] as Map<String, dynamic>?;
 
     final transactionNo = transaction?['transaction_no'] as String?;
+
+    final rmbRequested = (transaction?['rmb_requested'] as num?)?.toDouble();
+
+    final customer = transaction?['customers'] as Map<String, dynamic>?;
+
+    final customerCode = customer?['customer_code'] as String?;
+
+    final customerName = customer?['name'] as String?;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -223,6 +287,22 @@ class _SupplierPaymentDetailsPageState
             _buildInfoRow('Transaction', transactionNo ?? '-', bold: true),
 
             _buildInfoRow(
+              'Customer',
+              customerCode == null
+                  ? (customerName ?? '-')
+                  : customerName == null || customerName.trim().isEmpty
+                  ? customerCode
+                  : '$customerCode - $customerName',
+            ),
+
+            _buildInfoRow(
+              'RMB Requested',
+              rmbRequested == null
+                  ? '-'
+                  : 'RMB ${rmbRequested.toStringAsFixed(2)}',
+            ),
+
+            _buildInfoRow(
               'RMB Allocated',
               rmbAllocated == null
                   ? '-'
@@ -238,6 +318,11 @@ class _SupplierPaymentDetailsPageState
               'RM Allocation',
               amountRm == null ? '-' : _formatMoney(amountRm),
               bold: true,
+            ),
+
+            _buildInfoRow(
+              'Payment Share',
+              '${allocationPercentage.toStringAsFixed(2)}%',
             ),
           ],
         ),
@@ -261,11 +346,27 @@ class _SupplierPaymentDetailsPageState
                   ),
                 ),
                 Text(
-                  '${_allocations.length}',
+                  '${_allocations.length} transaction${_allocations.length == 1 ? '' : 's'}',
                   style: const TextStyle(color: Colors.grey),
                 ),
               ],
             ),
+
+            const SizedBox(height: 12),
+
+            if (_allocations.isNotEmpty) ...[
+              _buildInfoRow(
+                'Total RMB Allocated',
+                'RMB ${_totalAllocatedRmb.toStringAsFixed(2)}',
+                bold: true,
+              ),
+              _buildInfoRow(
+                'Total RM Allocated',
+                _formatMoney(_totalAllocatedRm),
+                bold: true,
+              ),
+              const Divider(),
+            ],
 
             const SizedBox(height: 12),
 

@@ -9,7 +9,9 @@ import '../../services/transaction_service.dart';
 import '../transactions/transactions_details_page.dart';
 
 class TransactionsPage extends StatefulWidget {
-  const TransactionsPage({super.key});
+  final bool showPendingOnly;
+
+  const TransactionsPage({super.key, this.showPendingOnly = false});
 
   @override
   State<TransactionsPage> createState() => _TransactionsPageState();
@@ -63,13 +65,17 @@ class _TransactionsPageState extends State<TransactionsPage> {
   }
 
   List<Transaction> get _filteredTransactions {
-    if (_searchQuery.trim().isEmpty) {
-      return _transactions;
-    }
-
     final query = _searchQuery.trim().toLowerCase();
 
     return _transactions.where((transaction) {
+      if (widget.showPendingOnly && transaction.status != 'pending') {
+        return false;
+      }
+
+      if (query.isEmpty) {
+        return true;
+      }
+
       return transaction.transactionNo.toLowerCase().contains(query) ||
           transaction.customerId.toLowerCase().contains(query) ||
           transaction.status.toLowerCase().contains(query);
@@ -318,7 +324,9 @@ class _TransactionsPageState extends State<TransactionsPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Transactions'),
+        title: Text(
+          widget.showPendingOnly ? 'Pending Transactions' : 'Transactions',
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
