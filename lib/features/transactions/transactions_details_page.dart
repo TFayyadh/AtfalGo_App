@@ -132,6 +132,22 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
     return 'RMB ${value.toStringAsFixed(2)}';
   }
 
+  String _formatStatus(String status) {
+    switch (status) {
+      case 'completed':
+        return '✓ Completed';
+      case 'customer_paid':
+        return 'Customer Paid';
+      case 'supplier_paid':
+        return 'Supplier Paid';
+      case 'cancelled':
+        return 'Cancelled';
+      case 'pending':
+      default:
+        return 'Pending';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -199,7 +215,11 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
               value: _formatRm(widget.transaction.amountInRm),
             ),
 
-            _DetailRow(label: 'Status', value: widget.transaction.status),
+            _DetailRow(
+              label: 'Status',
+              value: _formatStatus(widget.transaction.status),
+              bold: true,
+            ),
           ],
         ),
       ),
@@ -238,8 +258,15 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
             const Divider(height: 24),
 
             _DetailRow(
+              label: 'Amount In',
+              value: _formatRm(widget.transaction.amountInRm),
+              bold: true,
+            ),
+
+            _DetailRow(
               label: 'Total Supplier Cost',
               value: _formatRm(_totalSupplierCost),
+              bold: true,
             ),
 
             _DetailRow(
@@ -287,10 +314,25 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
                 padding: EdgeInsets.symmetric(vertical: 16),
                 child: Center(child: Text('No supplier allocations yet.')),
               )
-            else
+            else ...[
               ..._allocations.map(
                 (allocation) => _buildAllocationCard(allocation),
               ),
+
+              const Divider(height: 24),
+
+              _DetailRow(
+                label: 'Total RMB Allocated',
+                value: _formatRmb(_totalRmbAllocated),
+                bold: true,
+              ),
+
+              _DetailRow(
+                label: 'Total Supplier Cost',
+                value: _formatRm(_totalSupplierCost),
+                bold: true,
+              ),
+            ],
           ],
         ),
       ),

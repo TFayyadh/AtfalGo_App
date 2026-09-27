@@ -138,6 +138,32 @@ class SupplierPaymentAllocationService {
     return total;
   }
 
+  // GET ALLOCATED RMB FOR MULTIPLE TRANSACTIONS
+
+  Future<Map<String, double>> getAllocatedRmbForTransactions(
+    List<String> transactionIds,
+  ) async {
+    if (transactionIds.isEmpty) {
+      return {};
+    }
+
+    final response = await _supabase
+        .from('supplier_payment_allocations')
+        .select('transaction_id, rmb_allocated')
+        .inFilter('transaction_id', transactionIds);
+
+    final totals = <String, double>{};
+
+    for (final item in response as List) {
+      final transactionId = item['transaction_id'] as String;
+      final rmbAllocated = (item['rmb_allocated'] as num?)?.toDouble() ?? 0;
+
+      totals[transactionId] = (totals[transactionId] ?? 0) + rmbAllocated;
+    }
+
+    return totals;
+  }
+
   Future<List<Map<String, dynamic>>> getAllocationsForPayment(
     String supplierPaymentId,
   ) async {
@@ -146,6 +172,7 @@ class SupplierPaymentAllocationService {
         .select('''
         *,
         transactions (
+        id,
           transaction_no,
           rmb_requested,
           customer_id,

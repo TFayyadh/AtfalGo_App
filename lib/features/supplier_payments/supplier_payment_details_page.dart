@@ -2,9 +2,13 @@ import 'package:flutter/material.dart';
 
 import '../../models/supplier.dart';
 import '../../models/supplier_payment.dart';
+
 import '../../services/supplier_payment_allocation_service.dart';
 import '../../services/supplier_service.dart';
+import '../../services/transaction_service.dart';
+
 import '../supplier_payment_allocations/supplier_payment_allocation_page.dart';
+import '../transactions/transactions_details_page.dart';
 
 class SupplierPaymentDetailsPage extends StatefulWidget {
   final SupplierPayment payment;
@@ -21,6 +25,7 @@ class _SupplierPaymentDetailsPageState
   final SupplierService _supplierService = SupplierService();
   final SupplierPaymentAllocationService _allocationService =
       SupplierPaymentAllocationService();
+  final TransactionService _transactionService = TransactionService();
 
   Supplier? _supplier;
   List<Map<String, dynamic>> _allocations = [];
@@ -239,6 +244,29 @@ class _SupplierPaymentDetailsPageState
     );
   }
 
+  Future<void> _openTransaction(String transactionId) async {
+    try {
+      final transaction = await _transactionService.getTransactionById(
+        transactionId,
+      );
+
+      if (!mounted) return;
+
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => TransactionDetailsPage(transaction: transaction),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error loading transaction: $e')));
+    }
+  }
+
   Widget _buildAllocationCard(Map<String, dynamic> allocation) {
     final rmbAllocated = (allocation['rmb_allocated'] as num?)?.toDouble();
 
@@ -254,6 +282,8 @@ class _SupplierPaymentDetailsPageState
 
     final transactionNo = transaction?['transaction_no'] as String?;
 
+    final transactionId = transaction?['id'] as String?;
+
     final rmbRequested = (transaction?['rmb_requested'] as num?)?.toDouble();
 
     final customer = transaction?['customers'] as Map<String, dynamic>?;
@@ -264,67 +294,72 @@ class _SupplierPaymentDetailsPageState
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const Icon(Icons.receipt_long),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Transaction',
-                    style: const TextStyle(fontWeight: FontWeight.bold),
+      child: InkWell(
+        onTap: transactionId == null
+            ? null
+            : () => _openTransaction(transactionId),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.receipt_long),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Transaction',
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
                   ),
-                ),
-              ],
-            ),
+                ],
+              ),
 
-            const SizedBox(height: 10),
+              const SizedBox(height: 10),
 
-            _buildInfoRow('Transaction', transactionNo ?? '-', bold: true),
+              _buildInfoRow('Transaction', transactionNo ?? '-', bold: true),
 
-            _buildInfoRow(
-              'Customer',
-              customerCode == null
-                  ? (customerName ?? '-')
-                  : customerName == null || customerName.trim().isEmpty
-                  ? customerCode
-                  : '$customerCode - $customerName',
-            ),
+              _buildInfoRow(
+                'Customer',
+                customerCode == null
+                    ? (customerName ?? '-')
+                    : customerName == null || customerName.trim().isEmpty
+                    ? customerCode
+                    : '$customerCode - $customerName',
+              ),
 
-            _buildInfoRow(
-              'RMB Requested',
-              rmbRequested == null
-                  ? '-'
-                  : 'RMB ${rmbRequested.toStringAsFixed(2)}',
-            ),
+              _buildInfoRow(
+                'RMB Requested',
+                rmbRequested == null
+                    ? '-'
+                    : 'RMB ${rmbRequested.toStringAsFixed(2)}',
+              ),
 
-            _buildInfoRow(
-              'RMB Allocated',
-              rmbAllocated == null
-                  ? '-'
-                  : 'RMB ${rmbAllocated.toStringAsFixed(2)}',
-            ),
+              _buildInfoRow(
+                'RMB Allocated',
+                rmbAllocated == null
+                    ? '-'
+                    : 'RMB ${rmbAllocated.toStringAsFixed(2)}',
+              ),
 
-            _buildInfoRow(
-              'Supplier Rate',
-              supplierRate == null ? '-' : supplierRate.toStringAsFixed(8),
-            ),
+              _buildInfoRow(
+                'Supplier Rate',
+                supplierRate == null ? '-' : supplierRate.toStringAsFixed(8),
+              ),
 
-            _buildInfoRow(
-              'RM Allocation',
-              amountRm == null ? '-' : _formatMoney(amountRm),
-              bold: true,
-            ),
+              _buildInfoRow(
+                'RM Allocation',
+                amountRm == null ? '-' : _formatMoney(amountRm),
+                bold: true,
+              ),
 
-            _buildInfoRow(
-              'Payment Share',
-              '${allocationPercentage.toStringAsFixed(2)}%',
-            ),
-          ],
+              _buildInfoRow(
+                'Payment Share',
+                '${allocationPercentage.toStringAsFixed(2)}%',
+              ),
+            ],
+          ),
         ),
       ),
     );

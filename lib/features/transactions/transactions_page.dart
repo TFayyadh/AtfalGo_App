@@ -5,6 +5,7 @@ import '../../models/transaction.dart';
 
 import '../../services/customer_service.dart';
 import '../../services/transaction_service.dart';
+import '../../services/supplier_payment_allocation_service.dart';
 
 import '../transactions/transactions_details_page.dart';
 
@@ -20,9 +21,12 @@ class TransactionsPage extends StatefulWidget {
 class _TransactionsPageState extends State<TransactionsPage> {
   final TransactionService _transactionService = TransactionService();
   final CustomerService _customerService = CustomerService();
+  final SupplierPaymentAllocationService _allocationService =
+      SupplierPaymentAllocationService();
 
   List<Transaction> _transactions = [];
   List<Customer> _customers = [];
+  Map<String, double> _allocatedRmbByTransaction = {};
 
   bool _loading = true;
   String _searchQuery = '';
@@ -44,11 +48,20 @@ class _TransactionsPageState extends State<TransactionsPage> {
         _customerService.getCustomers(),
       ]);
 
+      final transactions = results[0] as List<Transaction>;
+      final customers = results[1] as List<Customer>;
+
+      final allocatedRmb = await _allocationService
+          .getAllocatedRmbForTransactions(
+            transactions.map((transaction) => transaction.id).toList(),
+          );
+
       if (!mounted) return;
 
       setState(() {
-        _transactions = results[0] as List<Transaction>;
-        _customers = results[1] as List<Customer>;
+        _transactions = transactions;
+        _customers = customers;
+        _allocatedRmbByTransaction = allocatedRmb;
         _loading = false;
       });
     } catch (e) {
@@ -68,7 +81,12 @@ class _TransactionsPageState extends State<TransactionsPage> {
     final query = _searchQuery.trim().toLowerCase();
 
     return _transactions.where((transaction) {
-      if (widget.showPendingOnly && transaction.status != 'pending') {
+      if (widget.showPendingOnly &&
+          ![
+            'pending',
+            'customer_paid',
+            'supplier_paid',
+          ].contains(transaction.status)) {
         return false;
       }
 
@@ -103,7 +121,23 @@ class _TransactionsPageState extends State<TransactionsPage> {
       return '-';
     }
 
-    return 'RMB ${value.toStringAsFixed(2)}';
+    return 'RM ${value.toStringAsFixed(2)}';
+  }
+
+  String _formatStatus(String status) {
+    switch (status) {
+      case 'completed':
+        return '✓ Completed';
+      case 'customer_paid':
+        return 'Customer Paid';
+      case 'supplier_paid':
+        return 'Supplier Paid';
+      case 'cancelled':
+        return 'Cancelled';
+      case 'pending':
+      default:
+        return 'Pending';
+    }
   }
 
   Future<void> _showTransactionDialog() async {
@@ -368,7 +402,12 @@ class _TransactionsPageState extends State<TransactionsPage> {
                     itemCount: transactions.length,
                     itemBuilder: (context, index) {
                       final transaction = transactions[index];
-
+                      final allocatedRmb =
+                          _allocatedRmbByTransaction[transaction.id] ?? 0;
+                      final remainingRmb =
+                          transaction.rmbRequested - allocatedRmb > 0
+                          ? transaction.rmbRequested - allocatedRmb
+                          : 0.0;
                       return Card(
                         margin: const EdgeInsets.only(bottom: 12),
                         child: ListTile(
@@ -405,6 +444,15 @@ class _TransactionsPageState extends State<TransactionsPage> {
                                   'RMB Requested: ${transaction.rmbRequested.toStringAsFixed(2)}',
                                 ),
                                 Text(
+                                  'RMB Remaining: ${remainingRmb.toStringAsFixed(2)}',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: remainingRmb <= 0.001
+                                        ? Colors.green
+                                        : Colors.orange,
+                                  ),
+                                ),
+                                Text(
                                   'Amount In: ${_formatMoney(transaction.amountInRm)}',
                                 ),
                               ],
@@ -415,10 +463,13 @@ class _TransactionsPageState extends State<TransactionsPage> {
                             crossAxisAlignment: CrossAxisAlignment.end,
                             children: [
                               Text(
-                                transaction.status,
-                                style: const TextStyle(
+                                _formatStatus(transaction.status),
+                                style: TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.bold,
+                                  color: transaction.status == 'completed'
+                                      ? Colors.green
+                                      : Colors.orange,
                                 ),
                               ),
                             ],

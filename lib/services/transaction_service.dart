@@ -13,10 +13,19 @@ class TransactionService {
     return (response as List).map((item) => Transaction.fromMap(item)).toList();
   }
 
+  Future<Transaction> getTransactionById(String id) async {
+    final response = await _supabase
+        .from('transactions')
+        .select()
+        .eq('id', id)
+        .single();
+
+    return Transaction.fromMap(response);
+  }
+
   Future<Transaction> createTransaction({
     required String transactionNo,
     required String customerId,
-    String? supplierId,
     required DateTime transactionDate,
     required double rmbRequested,
     required double customerRate,
@@ -30,7 +39,6 @@ class TransactionService {
         .insert({
           'transaction_no': transactionNo,
           'customer_id': customerId,
-          'supplier_id': supplierId,
           'transaction_date': transactionDate.toIso8601String(),
           'rmb_requested': rmbRequested,
           'amount_in_rm': amountInRm,
