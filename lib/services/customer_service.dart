@@ -16,7 +16,6 @@ class CustomerService {
   }
 
   Future<Customer> createCustomer({
-    required String customerCode,
     String? name,
     String? phone,
     String? alipayId,
@@ -25,7 +24,6 @@ class CustomerService {
     final response = await _supabase
         .from('customers')
         .insert({
-          'customer_code': customerCode,
           'name': name,
           'phone': phone,
           'alipay_id': alipayId,

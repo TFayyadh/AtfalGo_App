@@ -75,13 +75,23 @@ class _DashboardPageState extends State<DashboardPage> {
         totalRmbRequested += transaction.rmbRequested;
         totalAmountIn += transaction.amountInRm ?? 0;
       }
+      final transactionIds = transactions
+          .map((transaction) => transaction.id)
+          .toList();
+
+      final allocatedAmounts = await _allocationService
+          .getAllocatedAmountsForTransactions(transactionIds);
+
       for (final transaction in transactions) {
-        totalSupplierCost += await _allocationService
-            .getAllocatedAmountForTransaction(transaction.id);
+        totalSupplierCost += allocatedAmounts[transaction.id] ?? 0;
       }
 
       for (final transaction in transactions) {
-        if (transaction.status == 'pending') {
+        if ([
+          'pending',
+          'customer_paid',
+          'supplier_paid',
+        ].contains(transaction.status)) {
           pendingTransactions++;
         }
       }

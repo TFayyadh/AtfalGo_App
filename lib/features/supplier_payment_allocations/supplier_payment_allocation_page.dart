@@ -42,6 +42,38 @@ class _SupplierPaymentAllocationPageState
 
   bool get _isPaymentCompleted => widget.payment.status == 'completed';
 
+  bool get _hasAllocationValidationError {
+    if (_isPaymentCompleted) return true;
+
+    // Payment-level RM validation.
+    if ((_afterNewAllocationRemaining * 100).round() < 0) {
+      return true;
+    }
+
+    // Transaction-level RMB validation.
+    for (final transaction in _transactions) {
+      final enteredRmb = _getEnteredRmb(transaction.id);
+
+      if (enteredRmb <= 0) continue;
+
+      final enteredRate = _getEnteredRate(transaction.id);
+
+      if (enteredRate <= 0) {
+        return true;
+      }
+
+      final alreadyAllocated = _transactionAllocatedRmb[transaction.id] ?? 0;
+
+      final remainingRmb = transaction.rmbRequested - alreadyAllocated;
+
+      if ((enteredRmb * 100).round() > (remainingRmb * 100).round()) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -337,6 +369,17 @@ class _SupplierPaymentAllocationPageState
               '${_afterNewAllocationRemaining.toStringAsFixed(2)}',
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
+            if (_afterNewAllocationRemaining < -0.001) ...[
+              const SizedBox(height: 6),
+              Text(
+                'Allocation exceeds the remaining payment amount of '
+                'RM ${_remainingPaymentAmount.toStringAsFixed(2)}',
+                style: const TextStyle(
+                  color: Colors.red,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
             if (_isPaymentCompleted) ...[
               const SizedBox(height: 8),
               const Text(
@@ -362,6 +405,11 @@ class _SupplierPaymentAllocationPageState
     final isFullyAllocated = remainingRmb <= 0.001;
 
     final calculatedRm = _getCalculatedRm(transaction.id);
+
+    final enteredRmb = _getEnteredRmb(transaction.id);
+    final enteredRate = _getEnteredRate(transaction.id);
+
+    final hasInvalidRate = enteredRmb > 0 && enteredRate <= 0;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -425,6 +473,18 @@ class _SupplierPaymentAllocationPageState
               },
             ),
 
+            if (_getEnteredRmb(transaction.id) > remainingRmb) ...[
+              const SizedBox(height: 6),
+              Text(
+                'Exceeds RMB remaining limit of '
+                '¥${remainingRmb.toStringAsFixed(2)}',
+                style: const TextStyle(
+                  color: Colors.red,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+
             const SizedBox(height: 12),
 
             TextField(
@@ -441,6 +501,16 @@ class _SupplierPaymentAllocationPageState
                 setState(() {});
               },
             ),
+            if (hasInvalidRate) ...[
+              const SizedBox(height: 6),
+              const Text(
+                'Please enter a valid supplier rate.',
+                style: TextStyle(
+                  color: Colors.red,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
 
             const SizedBox(height: 12),
 
@@ -462,7 +532,10 @@ class _SupplierPaymentAllocationPageState
         child: SizedBox(
           width: double.infinity,
           child: ElevatedButton(
-            onPressed: _isSaving || _isPaymentCompleted
+            onPressed:
+                _isSaving ||
+                    _isPaymentCompleted ||
+                    _hasAllocationValidationError
                 ? null
                 : _saveAllocations,
             child: _isSaving

@@ -68,10 +68,6 @@ class _CustomersPageState extends State<CustomersPage> {
   Future<void> _showCustomerDialog({Customer? customer}) async {
     final isEditing = customer != null;
 
-    final codeController = TextEditingController(
-      text: customer?.customerCode ?? '',
-    );
-
     final nameController = TextEditingController(text: customer?.name ?? '');
 
     final phoneController = TextEditingController(text: customer?.phone ?? '');
@@ -95,21 +91,6 @@ class _CustomersPageState extends State<CustomersPage> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  TextFormField(
-                    controller: codeController,
-                    decoration: const InputDecoration(
-                      labelText: 'Customer Code',
-                      hintText: 'e.g. C001',
-                    ),
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return 'Customer Code is required';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 12),
-
                   TextFormField(
                     controller: nameController,
                     decoration: const InputDecoration(labelText: 'Name'),
@@ -155,7 +136,7 @@ class _CustomersPageState extends State<CustomersPage> {
                   if (isEditing) {
                     await _customerService.updateCustomer(
                       id: customer.id,
-                      customerCode: codeController.text.trim(),
+                      customerCode: customer.customerCode,
                       name: nameController.text.trim(),
                       phone: phoneController.text.trim(),
                       alipayId: alipayController.text.trim(),
@@ -163,7 +144,6 @@ class _CustomersPageState extends State<CustomersPage> {
                     );
                   } else {
                     await _customerService.createCustomer(
-                      customerCode: codeController.text.trim(),
                       name: nameController.text.trim(),
                       phone: phoneController.text.trim(),
                       alipayId: alipayController.text.trim(),

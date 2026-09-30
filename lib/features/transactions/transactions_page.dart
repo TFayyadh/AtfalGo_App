@@ -174,23 +174,6 @@ class _TransactionsPageState extends State<TransactionsPage> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        TextFormField(
-                          controller: transactionNoController,
-                          decoration: const InputDecoration(
-                            labelText: 'Transaction No',
-                            hintText: 'e.g. TXN001',
-                          ),
-                          validator: (value) {
-                            if (value == null || value.trim().isEmpty) {
-                              return 'Transaction No is required';
-                            }
-
-                            return null;
-                          },
-                        ),
-
-                        const SizedBox(height: 12),
-
                         DropdownButtonFormField<Customer>(
                           value: selectedCustomer,
                           decoration: const InputDecoration(
@@ -315,7 +298,6 @@ class _TransactionsPageState extends State<TransactionsPage> {
 
                     try {
                       await _transactionService.createTransaction(
-                        transactionNo: transactionNoController.text.trim(),
                         customerId: selectedCustomer!.id,
                         transactionDate: DateTime.now(),
                         rmbRequested: double.parse(rmbController.text.trim()),

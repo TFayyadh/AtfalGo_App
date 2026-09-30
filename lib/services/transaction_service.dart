@@ -24,7 +24,6 @@ class TransactionService {
   }
 
   Future<Transaction> createTransaction({
-    required String transactionNo,
     required String customerId,
     required DateTime transactionDate,
     required double rmbRequested,
@@ -37,7 +36,6 @@ class TransactionService {
     final response = await _supabase
         .from('transactions')
         .insert({
-          'transaction_no': transactionNo,
           'customer_id': customerId,
           'transaction_date': transactionDate.toIso8601String(),
           'rmb_requested': rmbRequested,
@@ -45,14 +43,9 @@ class TransactionService {
 
           // Supplier cost is now calculated from
           // supplier_payment_allocations.
-          'amount_out_rm': null,
-          'margin_rm': null,
-
           'customer_rate': customerRate,
 
           // Supplier rate no longer belongs to the transaction.
-          'supplier_rate': null,
-
           'status': 'pending',
           'notes': notes,
         })
